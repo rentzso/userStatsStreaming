@@ -1,0 +1,9 @@
+{
+  "fields": [
+    { "name": "user_id", "type": "int" },
+    { "name": "score_type", "type": "string" },
+    { "name": "num_user_topics", "type":"int"}
+  ],
+  "name": "userstatsrecord",
+  "type": "record"
+}
