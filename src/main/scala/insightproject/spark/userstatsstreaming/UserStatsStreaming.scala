@@ -49,6 +49,7 @@ object UserStatsStreaming {
     sparkConf.set("es.batch.size.entries", "1000")
     sparkConf.set("es.net.http.auth.user", sys.env("ELASTIC_USER"))
     sparkConf.set("es.net.http.auth.pass", sys.env("ELASTIC_PASS"))
+    sparkConf.set("spark.streaming.backpressure.enabled", "true")
     val timeWindow = sys.env.getOrElse("TIME_WINDOW", "10").toInt
     val ssc = new StreamingContext(sparkConf, Seconds(timeWindow))
     ssc.checkpoint(checkpointDirectory)
@@ -88,13 +89,15 @@ object UserStatsStreaming {
         }
       }).map({
         case (scoreType, avg) => {
+          val timestamp = System.currentTimeMillis / 1000
           Map(
             "score_type" -> scoreType,
             "average" -> avg,
-            "timestamp" -> System.currentTimeMillis / 1000
+            "id" -> (scoreType + "-" + timestamp.toString),
+            "timestamp" -> timestamp
           )
         }
-      }).saveToEs("users/stats")
+      }).saveToEs("users/stats", Map("es.mapping.id" -> "id"))
     )
     ssc
   }
