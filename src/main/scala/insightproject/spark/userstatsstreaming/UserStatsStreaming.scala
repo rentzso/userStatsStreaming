@@ -50,7 +50,7 @@ object UserStatsStreaming {
     sparkConf.set("es.net.http.auth.user", sys.env("ELASTIC_USER"))
     sparkConf.set("es.net.http.auth.pass", sys.env("ELASTIC_PASS"))
     sparkConf.set("spark.streaming.backpressure.enabled", "true")
-    val timeWindow = sys.env.getOrElse("TIME_WINDOW", "10").toInt
+    val timeWindow = sys.env.getOrElse("TIME_WINDOW", "5").toInt
     val ssc = new StreamingContext(sparkConf, Seconds(timeWindow))
     ssc.checkpoint(checkpointDirectory)
     val topics = Array(topic)
@@ -63,42 +63,12 @@ object UserStatsStreaming {
       locationStrategy,
       Subscribe[String, Array[Byte]](topics, kafkaParams)
     )
-
-    def sumReduce(a: (Int, Int), b:(Int, Int)) = {
-      (a._1 + b._1, a._2 + b._2)
+    stream.foreachRDD { rdd =>
+      rdd.map(record => {
+        val bytes = record.value()
+        convertAvroBytes(bytes)
+      }).saveToEs("users/stats", Map("es.mapping.id" -> "user_id"))
     }
-    def inverseReduce(a: (Int, Int), b:(Int, Int)) = {
-      (a._1 - b._1, a._2 - b._2)
-    }
-
-    val results = stream.map(record => (record.key, record.value)).mapValues(
-      msg => {
-        val avroMsg = convertAvroBytes(msg)
-        (avroMsg("num_user_topics").asInstanceOf[Int], 1)
-      }
-    ).reduceByKeyAndWindow(
-      sumReduce(_, _), inverseReduce(_, _), Seconds(timeWindow), Seconds(3 * timeWindow.toInt)
-    )
-    results.foreachRDD( rdd =>
-      rdd.mapValues((sumAndCountTuple: (Int, Int)) => {
-        if (sumAndCountTuple._2 == 0) {
-          0
-        } else {
-          // computes the average
-          sumAndCountTuple._1.toDouble/sumAndCountTuple._2
-        }
-      }).map({
-        case (scoreType, avg) => {
-          val timestamp = System.currentTimeMillis / 1000
-          Map(
-            "score_type" -> scoreType,
-            "average" -> avg,
-            "id" -> (scoreType + "-" + timestamp.toString),
-            "timestamp" -> timestamp
-          )
-        }
-      }).saveToEs("users/stats", Map("es.mapping.id" -> "id"))
-    )
     ssc
   }
   def main(args: Array[String]): Unit = {
@@ -124,7 +94,10 @@ object UserStatsStreaming {
     Map(
       "user_id" -> record.get("user_id").asInstanceOf[Int],
       "score_type" -> record.get("score_type").asInstanceOf[org.apache.avro.util.Utf8].toString,
-      "num_user_topics" -> record.get("num_user_topics").asInstanceOf[Int]
+      "num_user_topics" -> record.get("num_user_topics").asInstanceOf[Int],
+      "num_new_user_topics" -> record.get("num_new_user_topics").asInstanceOf[Int],
+      "news_id" -> record.get("news_id").asInstanceOf[org.apache.avro.util.Utf8].toString,
+      "news_url" -> record.get("news_url").asInstanceOf[org.apache.avro.util.Utf8].toString
     )
   }
 
