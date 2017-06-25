@@ -6,7 +6,7 @@
     { "name": "num_new_user_topics", "type": "int"},
     { "name": "news_id", "type":"string"},
     { "name": "news_url", "type":"string"},
-    { "name": "timestamp", "type":"int"}
+    { "name": "timestamp", "type":"long"}
   ],
   "name": "userstatsrecord",
   "type": "record"
