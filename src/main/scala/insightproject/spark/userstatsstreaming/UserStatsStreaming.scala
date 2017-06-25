@@ -98,7 +98,8 @@ object UserStatsStreaming {
       "num_new_user_topics" -> record.get("num_new_user_topics").asInstanceOf[Int],
       "news_id" -> record.get("news_id").asInstanceOf[org.apache.avro.util.Utf8].toString,
       "news_url" -> record.get("news_url").asInstanceOf[org.apache.avro.util.Utf8].toString,
-      "timestamp" -> record.get("timestamp").asInstanceOf[Long]
+      "timestamp" -> record.get("timestamp").asInstanceOf[Long],
+      "took" -> record.get("took").asInstanceOf[Int]
     )
   }
 }
