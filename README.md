@@ -1,4 +1,4 @@
-# userStatsStreaming# newsStreaming
+# userStatsStreaming
 
 part of the Insight Project [nexTop](https://github.com/rentzso/nextop)
 
@@ -13,6 +13,6 @@ Example usage in standalone:
 ```
 $SPARK_HOME/bin/spark-submit --class insightproject.spark.userstatsstreaming.UserStatsStreaming --master \
 spark://`hostname`:7077 --jars userStatsStreaming-assembly-1.0.jar userStatsStreaming-assembly-1.0.jar \
-my_topic my_group_id elastic_destination_index/elastic_doc_type
+my_topic my_group_id
 ```
 
